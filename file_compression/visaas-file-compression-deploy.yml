@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: visaas-prod-file-compression
+  labels:
+    app: visaas-prod-file-compression
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: visaas-prod-file-compression
+  minReadySeconds: 60
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 5
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: visaas-prod-file-compression
+    spec:
+      containers:
+      - name: visaas-prod-file-compression
+        image: 759971283879.dkr.ecr.ap-south-1.amazonaws.com/file-compression:1.0.0-7
+        ports:
+        - containerPort: 5000
+        volumeMounts:
+        - name: efs-storage
+          mountPath: /app/logs/
+        resources:
+          requests:
+            cpu: "100m"        
+            memory: "512Mi"
+          limits:
+            cpu: "500m"        
+            memory: "1024Mi"
+      volumes:
+      - name: efs-storage
+        persistentVolumeClaim:
+          claimName: efs-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: visaas-prod-file-compression
+spec:
+  selector:
+    app: visaas-prod-file-compression
+  ports:
+  - protocol: TCP
+    port: 5000
+    targetPort: 5000
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: visaas-prod-file-compression-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: visaas-prod-file-compression
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 75
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Pods
+          value: 2
+          periodSeconds: 60
+        - type: Percent
+          value: 50
+          periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 300
+        - type: Percent
+          value: 20
+          periodSeconds: 300
