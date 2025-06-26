@@ -18,41 +18,43 @@ spec:
       labels:
         app: visaas-prod-audit-service
     spec:
+      imagePullSecrets:
+        - name: dockerhub-secret   # <-- Secret for private Docker Hub repo
       containers:
-      - name: visaas-prod-audit-service
-        image: comuse/visaas-prod-audit-service:2
-        ports:
-        - containerPort: 8080
-        env:
-         - name: XMS
-           value: "-Xms256M"
-         - name: XMX
-           value: "-Xmx512M"
-         - name: projectid
-           value: "242"
-         - name: env
-           value: "prod-new"
-         - name: apikey
-           valueFrom:
-            secretKeyRef:
-              name: visaas-gitlab-secret
-              key: apikey
-         - name: folderfilepath
-           value: "audit-service/config"
-        resources:
-          requests:
-            cpu: "100m"
-            memory: "512Mi"
-          limits:
-            cpu: "500m"
-            memory: "1024Mi"
-        volumeMounts:
-        - name: efs-storage
-          mountPath: /app/logs/
+        - name: visaas-prod-audit-service
+          image: comuse/visaas-prod-audit-service:2
+          ports:
+            - containerPort: 8080
+          env:
+            - name: XMS
+              value: "-Xms256M"
+            - name: XMX
+              value: "-Xmx512M"
+            - name: projectid
+              value: "242"
+            - name: env
+              value: "prod-new"
+            - name: apikey
+              valueFrom:
+                secretKeyRef:
+                  name: visaas-gitlab-secret
+                  key: apikey
+            - name: folderfilepath
+              value: "audit-service/config"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "512Mi"
+            limits:
+              cpu: "500m"
+              memory: "1024Mi"
+          volumeMounts:
+            - name: efs-storage
+              mountPath: /opt/app/logs/
       volumes:
-      - name: efs-storage
-        persistentVolumeClaim:
-          claimName: efs-pvc
+        - name: efs-storage
+          persistentVolumeClaim:
+            claimName: efs-pvc
 ---
 apiVersion: v1
 kind: Service
@@ -62,9 +64,9 @@ spec:
   selector:
     app: visaas-prod-audit-service
   ports:
-  - protocol: TCP
-    port: 8080
-    targetPort: 8080
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
   type: ClusterIP
 ---
 apiVersion: autoscaling/v2
