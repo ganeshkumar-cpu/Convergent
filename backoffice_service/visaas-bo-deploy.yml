@@ -20,31 +20,33 @@ spec:
       labels:
         app: visaas-prod-bo-service
     spec:
+      imagePullSecrets:
+        - name: dockerhub-secret   # 🔐 Secret added for private registry
       containers:
-      - name: visaas-prod-bo-service
-        image: 759971283879.dkr.ecr.ap-south-1.amazonaws.com/backoffice-convergent-service:1.0.0-20
-        ports:
-        - containerPort: 8080
-        env:
-        - name: DB_CONFIG
-          valueFrom:
-            secretKeyRef:
-              name: db-config-secret
-              key: DB_CONFIG
-        resources:
-          requests:
-            cpu: "50m"
-            memory: "1012Mi"
-          limits:
-            cpu: "500m"
-            memory: "1524Mi"
-        volumeMounts:
-        - name: efs-storage
-          mountPath: /app/logs/
+        - name: visaas-prod-bo-service
+          image: 759971283879.dkr.ecr.ap-south-1.amazonaws.com/backoffice-convergent-service:1.0.0-20
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DB_CONFIG
+              valueFrom:
+                secretKeyRef:
+                  name: db-config-secret
+                  key: DB_CONFIG
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "1012Mi"
+            limits:
+              cpu: "500m"
+              memory: "1524Mi"
+          volumeMounts:
+            - name: efs-storage
+              mountPath: /opt/app/logs/
       volumes:
-      - name: efs-storage
-        persistentVolumeClaim:
-          claimName: efs-pvc
+        - name: efs-storage
+          persistentVolumeClaim:
+            claimName: efs-pvc
 ---
 apiVersion: v1
 kind: Service
@@ -54,9 +56,9 @@ spec:
   selector:
     app: visaas-prod-bo-service
   ports:
-  - protocol: TCP
-    port: 8080
-    targetPort: 8080
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
   type: ClusterIP
 ---
 apiVersion: autoscaling/v2
