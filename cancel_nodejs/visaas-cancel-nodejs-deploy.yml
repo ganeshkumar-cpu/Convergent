@@ -20,6 +20,8 @@ spec:
       labels:
         app: visaas-prod-cancel-nodejs
     spec:
+      imagePullSecrets:
+        - name: dockerhub-secret  # 🔐 Added secret for pulling image
       containers:
         - name: visaas-prod-cancel-nodejs
           image: 759971283879.dkr.ecr.ap-south-1.amazonaws.com/cancel-nodejs:latest
@@ -37,7 +39,7 @@ spec:
               memory: "1024Mi"
           volumeMounts:
             - name: efs-storage
-              mountPath: /app/logs/
+              mountPath: /opt/app/logs/
       volumes:
         - name: efs-storage
           persistentVolumeClaim:
